@@ -6,11 +6,14 @@ import { loadFonts } from './plugins/webfontloader'
 import store from './store'; 
 import VueApexCharts from 'vue3-apexcharts';
 
-
 loadFonts()
 
-createApp(App)
-  .use(VueApexCharts)
+const app = createApp(App);
+
+// Registra "perfect-scrollbar" como elemento customizado para evitar erro de resolução
+app.config.compilerOptions.isCustomElement = (tag) => tag === 'perfect-scrollbar';
+
+app.use(VueApexCharts)
   .use(router)
   .use(vuetify)
   .use(store)

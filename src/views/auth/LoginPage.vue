@@ -12,31 +12,32 @@
             <img src="/images/logo.png" alt="Logo da Empresa" class="logo" />
           </div>
 
-          <v-toolbar color="white" dark flat>
+          <v-toolbar color="#FFFF" dark flat>
             <v-toolbar-title>Login</v-toolbar-title>
           </v-toolbar>
 
           <v-card-text>
+            <v-alert v-if="error" type="error" class="mt-3 mb-5">{{ error }}</v-alert>
             <v-form @submit.prevent="login">
               <v-text-field v-model="email" label="Email" type="email" variant="outlined" required></v-text-field>
 
               <v-text-field v-model="password" label="Senha" type="password" variant="outlined" required></v-text-field>
 
-              <v-btn type="submit" color="primary" block>Realizar Acesso</v-btn>
+              <v-btn type="submit" color="primary" block :loading="loading">Realizar Acesso</v-btn>
             </v-form>
 
             <v-btn variant="text" class="mt-2 forgot-password">
               Esqueci minha senha?
             </v-btn>
 
-            <div class="social-login">
+            <!-- <div class="social-login">
               <p>Acesse sua conta através de suas redes sociais:</p>
               <div class="social-icons">
                 <v-icon class="google-icon">mdi-google</v-icon>
                 <v-icon class="linkedin-icon">mdi-linkedin</v-icon>
                 <v-icon class="qrcode-icon">mdi-qrcode</v-icon>
               </div>
-            </div>
+            </div> -->
           </v-card-text>
 
           <v-card-actions>
@@ -52,31 +53,36 @@
 </template>
 
 <script>
-const mockUser = {
-  email: "matheus@gmail.com",
-  password: "senha123",
-};
+import { authService } from '@/services/authService';
+
 export default {
   data() {
     return {
-      email: "",
-      password: "",
+      email: '',
+      password: '',
+      loading: false,
+      error: null,
     };
   },
   methods: {
-    login() {
-      if (this.email === mockUser.email && this.password === mockUser.password) {
-        // Simula um login bem-sucedido
-        const user = { email: this.email };
-        this.$store.dispatch('login', user); // Atualiza o estado de autenticação no Vuex
-        this.$router.push('/'); // Redireciona para a página inicial
-      } else {
-        alert("Credenciais inválidas. Tente novamente.");
+    async login() {
+      this.loading = true;
+      this.error = null;
+      try {
+        const success = await authService.login(this.email, this.password);
+        if (success) {
+          this.$router.push('/');
+        }
+      } catch (err) {
+        this.error = err;
+      } finally {
+        this.loading = false;
       }
     },
   },
 };
 </script>
+
 
 <style scoped>
 .login-container {
@@ -86,7 +92,7 @@ export default {
 }
 
 .image-section {
-  background: url('/public/images/login.webp') center center/cover no-repeat;
+  background: url('/public/images/login_bg.jpg') center center/cover no-repeat;
   height: 100vh;
 }
 

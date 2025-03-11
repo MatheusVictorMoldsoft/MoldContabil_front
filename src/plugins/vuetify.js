@@ -5,11 +5,15 @@ import 'vuetify/styles'
 // Vuetify
 import { createVuetify } from 'vuetify'
 
+
+
+
+
 const customTheme = {
   dark: false, // Define se é um tema escuro ou claro
   colors: {
-    primary: '#1e88e5',
-    secondary: '#5e35b1',
+    primary: '#004DFF',
+    secondary: '#00ACF3',
     info: '#03c9d7',
     success: '#00c853',
     accent: '#FFAB91',
@@ -35,7 +39,8 @@ const customTheme = {
     gray100: '#fafafa',
     primary200: '#90caf9',
     secondary200: '#b39ddb',
-    white: '#FFFFFF' // Branco
+    white: '#E8E8E8', // Branco
+    black: '#16181A'
   }
 }
 

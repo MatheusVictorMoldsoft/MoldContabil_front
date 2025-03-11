@@ -1,40 +1,34 @@
 <template>
-    <v-row>
-      <!-- Total Earning -->
-      <v-col cols="12" md="4">
-        <TotalEarning />
+  <v-container fluid>
+    <v-row dense>
+      <!-- Exemplo: linha com gráficos e tabela -->
+      <v-col cols="12" md="6">
+        <!-- Componente de gráfico de barras, por exemplo -->
+        <BarChartAbertoFechado />
       </v-col>
-  
-      <!-- Total Order -->
-      <v-col cols="12" md="4">
-        <TotalOrder />
+      <v-col cols="12" md="6">
+        <!-- Componente de gráfico de linha -->
+        <LineChartRepresentation />
       </v-col>
-  
-      <!-- Total Growth -->
-      <v-col cols="12" lg="8">
-        <TotalGrowth />
-      </v-col>
-  
-      <!-- Popular Stocks -->
-      <v-col cols="12" lg="4">
-        <PopularStocks />
+      <v-col cols="12">
+        <!-- Tabela de usuários -->
+        <UsuariosTable />
       </v-col>
     </v-row>
-  </template>
-  
-  <script>
-  import TotalEarning from "./components/CardPendente.vue";
-  import TotalOrder from "./components/CardStatus.vue";
-  import TotalGrowth from "./components/GraphDash.vue";
-  import PopularStocks from "./components/PorUsuario.vue";
-  
-  export default {
-    components: {
-      TotalEarning,
-      TotalOrder,
-      TotalGrowth,
-      PopularStocks
-    }
-  };
-  </script>
-  
+  </v-container>
+</template>
+
+<script>
+import BarChartAbertoFechado from "./components/BarChartAbertoFechado.vue";
+import LineChartRepresentation from "./components/LineChartRepresentation.vue";
+import UsuariosTable from "./components/UsuariosTable.vue";
+
+export default {
+  name: "HomePage",
+  components: {
+    BarChartAbertoFechado,
+    LineChartRepresentation,
+    UsuariosTable,
+  },
+};
+</script>

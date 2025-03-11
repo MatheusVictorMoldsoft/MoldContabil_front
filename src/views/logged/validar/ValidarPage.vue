@@ -3,12 +3,30 @@
     <v-card>
       <v-card-title>Validar Documentos</v-card-title>
       <v-card-text>
-        <v-data-table :headers="headers" :items="documentos" class="clickable-table" @click:row="goToValidarId">
-          <!-- Formatações personalizadas -->
-          <template v-slot:[`item.status`]="{ item }">
-            <v-chip :color="getStatusColor(item.status)" dark>
-              {{ getStatusText(item.status) }}
-            </v-chip>
+        <!-- Se loading, exibe skeleton; senão, mostra a tabela -->
+        <v-skeleton-loader
+          v-if="loading"
+          type="paragraph"
+          :lines="3"
+          class="mb-4"
+        />
+        <v-data-table
+          v-else
+          :headers="headers"
+          :items="documentos"
+          class="clickable-table"
+        >
+          <template v-slot:item="{ item }">
+            <tr @click="goToValidarId(item)">
+              <td>{{ item.cliente }}</td>
+              <td>{{ item.cnpj_cpf }}</td>
+              <td>{{ item.qtd_documentos }}</td>
+              <td>
+                <v-chip :color="getStatusColor(item.status)" dark>
+                  {{ getStatusText(item.status) }}
+                </v-chip>
+              </td>
+            </tr>
           </template>
         </v-data-table>
       </v-card-text>
@@ -17,11 +35,12 @@
 </template>
 
 <script>
-import axios from "axios";
+import API from '@/services/apiService';
 
 export default {
   data() {
     return {
+      loading: true, // Controla a exibição do skeleton
       headers: [
         { title: "Cliente", key: "cliente" },
         { title: "CNPJ/CPF", key: "cnpj_cpf" },
@@ -34,19 +53,16 @@ export default {
   methods: {
     async fetchDocumentos() {
       try {
-        const response = await axios.get(
-          "https://cfad-2804-880-1324-5500-50f1-2f7b-10e8-ea7a.ngrok-free.app/api/v1/client_serve/documentos-pendentes/",
-          {
-            headers: {
-              "Accept": "application/json",
-              "ngrok-skip-browser-warning": "true", // Adiciona o cabeçalho para pular o aviso do ngrok
-            },
-          }
-        );
+        const response = await API.get('/client_serve/documentos-pendentes/', {
+          headers: {
+            Accept: "application/json",
+            "ngrok-skip-browser-warning": "true",
+          },
+        });
 
         if (Array.isArray(response.data)) {
           this.documentos = response.data.map((doc) => ({
-            id: doc.id,
+            id: doc.cliente_id || doc.id,
             cliente: doc.nome,
             cnpj_cpf: doc.cpf_cnpj,
             qtd_documentos: doc.quantidade_documentos,
@@ -57,6 +73,9 @@ export default {
         }
       } catch (error) {
         console.error("Erro ao buscar documentos:", error);
+      } finally {
+        // Assim que a requisição terminar (sucesso ou erro), o skeleton some
+        this.loading = false;
       }
     },
     getStatusText(status) {
@@ -66,10 +85,14 @@ export default {
       return status === "Pendente" ? "red" : "green";
     },
     goToValidarId(item) {
-      console.log("Item completo:", item); // Verifique a estrutura do item
-      console.log("ID da rota:", item.id); // Verifique o ID
-      this.$router.push(`/validar/${item.id}`);
-    }
+      console.log("Item completo:", item);
+      console.log("ID da rota:", item.id);
+      if (item.id) {
+        this.$router.push(`/validar/${item.id}`);
+      } else {
+        console.error("ID do cliente não encontrado:", item);
+      }
+    },
   },
   mounted() {
     this.fetchDocumentos();
@@ -78,12 +101,10 @@ export default {
 </script>
 
 <style scoped>
-/* Adiciona cursor de ponteiro e efeito hover para melhor UX */
 .clickable-table tbody tr {
   cursor: pointer;
   transition: background 0.3s;
 }
-
 .clickable-table tbody tr:hover {
   background: #f5f5f5;
 }

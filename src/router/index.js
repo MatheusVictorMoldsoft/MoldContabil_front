@@ -10,6 +10,8 @@ import ValidarAnalise from '@/views/logged/validar/ValidarAnalise.vue';
 import Enviar from '@/views/logged/enviar/EnviarPage.vue';
 import Suporte from '@/views/logged/suporte/SuportePage.vue';
 import Profile from '@/views/logged/profile/ProfilePage.vue';
+import Cliente from '@/views/logged/clientes/ClientePage.vue';
+import ClienteCreate  from '@/views/logged/clientes/ClienteCreate.vue';
 import store from '../store'; 
 
 const routes = [
@@ -31,11 +33,13 @@ const routes = [
         { path: '/', name: 'Home', component: Home },
         { path: '/validar', name: 'Validar', component: Validar },
         { path: '/validar/:id', name: 'ValidarId', component: ValidarId },
-        { path: '/validar/analise/:id', name: 'ValidarAnalise', component: ValidarAnalise },
+        { path: '/validar/analise/:docId', name: 'ValidarAnalise', component: ValidarAnalise },
         { path: '/enviar' ,name: 'Enviar', component: Enviar },
         { path: '/plano-de-contas' ,name: 'PlanoContas', component: Plano },
         { path: '/suporte' ,name: 'Suporte', component: Suporte },
         { path: '/perfil' ,name: 'Profile', component: Profile },
+        { path: '/clientes' ,name: 'Cliente', component: Cliente},
+        { path: '/clientes/create' ,name: 'ClienteCreate', component: ClienteCreate}
       ],
     },
   ];
@@ -45,9 +49,25 @@ const routes = [
     routes,
   });
   
-  router.beforeEach((to, from, next) => {
-    if (to.meta.requiresAuth && !store.getters.isAuthenticated) {
-      next('/login');
+  router.beforeEach(async (to, from, next) => {
+    if (to.meta.requiresAuth) {
+      // Se não há token, redireciona para login
+      if (!store.getters.isAuthenticated) {
+        return next('/login');
+      }
+  
+      // Se o usuário ainda não foi carregado, tenta buscar os dados
+      if (!store.getters.currentUser) {
+        try {
+          await store.dispatch('fetchUser');
+          next();
+        } catch (error) {
+          // Se falhar (ex: sessão expirada), redireciona para login
+          next('/login');
+        }
+      } else {
+        next();
+      }
     } else {
       next();
     }

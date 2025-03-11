@@ -2,8 +2,15 @@
   <v-container>
     <h1 class="page-title">Validar ID</h1>
 
-    <!-- Tabela de validação -->
+    <!-- Se loading, exibe skeleton; senão, mostra a tabela de fato -->
+    <v-skeleton-loader
+      v-if="loading"
+      type="table"
+      height="300"
+      class="mb-4"
+    />
     <v-data-table
+      v-else
       v-model="selected"
       :headers="headers"
       :items="documentos"
@@ -13,20 +20,27 @@
       dense
       @click:row="abrirDetalhes"
     >
-      <!-- Formatações personalizadas -->
+      <!-- Formatações personalizadas para "status" -->
       <template v-slot:[`item.status`]="{ item }">
         <v-chip :color="getStatusColor(item.status)" dark>
           {{ getStatusText(item.status) }}
         </v-chip>
       </template>
 
+      <!-- Formatação personalizada para "valor" -->
       <template v-slot:[`item.valor`]="{ item }">
         R$ {{ item.valor.toFixed(2) }}
       </template>
+
+      <!-- Nova coluna "Ações", com botão "Detalhar" -->
+      <template v-slot:[`item.detalhar`]="{ item }">
+        <v-btn color="primary" @click.stop="abrirDetalhes(item)">Detalhar</v-btn>
+      </template>
     </v-data-table>
 
-    <!-- Botão de validação -->
+    <!-- Botão de validação visível apenas após o carregamento -->
     <v-btn
+      v-if="!loading"
       color="primary"
       class="mt-4"
       :disabled="selected.length === 0"
@@ -37,30 +51,15 @@
   </v-container>
 </template>
 
-
 <script>
+import API from '@/services/apiService';
+
 export default {
   data() {
     return {
-      selected: [], // IDs selecionados
-      documentos: [
-        {
-          id: 3,
-          cod_conta_debito: "2.1.5",
-          cod_conta_credito: "3.1.1",
-          valor: 3894.4,
-          nome_documento: "file\\João Silva\\Outubro\\11.10 - COMPROV. THONSOM.pdf",
-          status: 0,
-        },
-        {
-          id: 4,
-          cod_conta_debito: "1.3.2",
-          cod_conta_credito: "2.2.1",
-          valor: 1250.0,
-          nome_documento: "file\\Ana Souza\\Novembro\\15.11 - RECIBO FISCAL.pdf",
-          status: 1,
-        },
-      ],
+      loading: true, // Controla o skeleton e a exibição do botão
+      selected: [],  // IDs selecionados
+      documentos: [],
       headers: [
         { title: "ID", key: "id", sortable: true },
         { title: "Conta Débito", key: "cod_conta_debito" },
@@ -68,11 +67,11 @@ export default {
         { title: "Valor", key: "valor" },
         { title: "Documento", key: "nome_documento" },
         { title: "Status", key: "status" },
+        { title: "Ações", key: "detalhar", sortable: false },
       ],
     };
   },
   methods: {
-    // Retorna o status formatado
     getStatusText(status) {
       return status === 0 ? "Pendente" : "Aprovado";
     },
@@ -80,16 +79,56 @@ export default {
       return status === 0 ? "orange" : "green";
     },
 
-    // Abre a página de análise ao clicar em um item
     abrirDetalhes(item) {
       this.$router.push(`/validar/analise/${item.id}`);
     },
 
-    // Envia os IDs selecionados para validação
-    validarSelecionados() {
+    async validarSelecionados() {
       console.log("IDs para validação:", this.selected);
-      alert(`IDs Validados: ${this.selected.join(", ")}`);
+      try {
+        const payload = { document_ids: this.selected };
+        const response = await API.put("/client_serve/validado", payload, {
+          headers: {
+            "Accept": "application/json",
+            "ngrok-skip-browser-warning": "true",
+          },
+        });
+        console.log("Resposta da validação:", response.data);
+        alert("Documentos validados com sucesso!");
+        this.fetchDocumentos();
+      } catch (error) {
+        console.error("Erro ao validar documentos:", error);
+        alert("Erro ao validar documentos");
+      }
     },
+
+    async fetchDocumentos() {
+      try {
+        const cliente_id = this.$route.params.id;
+        const response = await API.get(
+          `/client_serve/documentos-pendentes/analise/${cliente_id}`,
+          {
+            headers: {
+              "Accept": "application/json",
+              "ngrok-skip-browser-warning": "true",
+            },
+          }
+        );
+        if (Array.isArray(response.data)) {
+          this.documentos = response.data;
+        } else {
+          console.error("Erro: resposta da API não é um array", response.data);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar documentos de análise:", error);
+      } finally {
+        // Após carregar, some o skeleton e mostre o botão
+        this.loading = false;
+      }
+    },
+  },
+  mounted() {
+    this.fetchDocumentos();
   },
 };
 </script>
@@ -101,4 +140,3 @@ export default {
   margin-bottom: 20px;
 }
 </style>
-

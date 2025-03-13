@@ -2,7 +2,7 @@ import axios from 'axios';
 import store from '../store';
 
 const API = axios.create({
-   baseURL: 'http://127.0.0.1:8000/api/v1',
+   baseURL: 'https://api.moldconsult.online/api/v1',
 });
 
 API.interceptors.request.use(

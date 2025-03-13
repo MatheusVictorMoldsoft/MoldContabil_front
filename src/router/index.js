@@ -30,7 +30,7 @@ const routes = [
       component: DefaultLayout,
       meta: { requiresAuth: true },
       children: [
-        { path: '/', name: 'Home', component: Home },
+        { path: '/', name: 'dashboard', component: Home },
         { path: '/validar', name: 'Validar', component: Validar },
         { path: '/validar/:id', name: 'ValidarId', component: ValidarId },
         { path: '/validar/analise/:docId', name: 'ValidarAnalise', component: ValidarAnalise },

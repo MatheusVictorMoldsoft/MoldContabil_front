@@ -1,16 +1,30 @@
 import store from '../store';
 import API from './apiService';
 
-const API_URL = 'http://127.0.0.1:8000/api/v1/auth';
-
 export const authService = {
   async login(email, password) {
-    return await store.dispatch('login', { email, password });
+    try {
+      const response = await API.post('/usuario/login', {
+        email: email,
+        senha: password,
+      });
+
+      const { access_token } = response.data;
+
+      if (access_token) {
+        store.commit('SET_TOKEN', access_token);
+        await store.dispatch('fetchUser'); // Obtém os dados do usuário após login
+        return true;
+      }
+      return false;
+    } catch (error) {
+      throw error.response?.data?.detail || "Erro ao efetuar login";
+    }
   },
 
   async register(nome, email, senha, empresa_id) {
     try {
-      const response = await API.post(`${API_URL}/register`, {
+      const response = await API.post('/usuario', {
         nome,
         email,
         senha,
@@ -21,10 +35,10 @@ export const authService = {
       throw error.response?.data?.detail || "Erro ao criar conta";
     }
   },
-  
+
   async getCurrentUser() {
     try {
-      const response = await API.get('/auth/me');
+      const response = await API.get('/usuario/me');
       return response.data;
     } catch (error) {
       throw error.response?.data?.detail || "Erro ao obter usuário";

@@ -50,7 +50,7 @@
     methods: {
       async fetchClientes() {
         try {
-          const response = await API.get("/cliente/clientes"); // Usa API centralizada
+          const response = await API.get("/clientes"); // Usa API centralizada
           this.clientes = response.data;
         } catch (error) {
           this.errorMessage = "Erro ao carregar clientes.";

@@ -7,20 +7,9 @@
           <v-card-title>Visualização do Documento</v-card-title>
           <v-card-text>
             <!-- Se ainda estiver carregando, mostra skeleton -->
-            <v-skeleton-loader
-              v-if="loadingPDF"
-              type="image"
-              height="600px"
-              width="100%"
-            />
+            <v-skeleton-loader v-if="loadingPDF" type="image" height="600px" width="100%" />
             <!-- Caso contrário, mostra o embed PDF -->
-            <embed
-              v-else
-              :src="pdfBlobUrl"
-              type="application/pdf"
-              width="100%"
-              height="600px"
-            />
+            <embed v-else :src="pdfBlobUrl" type="application/pdf" width="100%" height="600px" />
           </v-card-text>
         </v-card>
       </v-col>
@@ -104,28 +93,23 @@ export default {
 
     async fetchDocumentoDetalhes() {
       try {
-        const response = await API.get(`/client_serve/documentos/detalhes/${this.docId}`);
+        const response = await API.get(`/validacao/${this.docId}`);
         this.documento = response.data;
       } catch (error) {
         console.error("Erro ao buscar detalhes do documento:", error);
       } finally {
-        // Independe do sucesso ou falha, encerramos o loading
         this.loadingDetails = false;
       }
     },
 
     async fetchDocumentoArquivo() {
       try {
-        const response = await API.get(
-          `/client_serve/documentos-pendentes/${this.docId}`,
-          { responseType: "blob" }
-        );
+        const response = await API.get(`/validacao/arquivo/${this.docId}`, { responseType: "blob" });
         const blob = new Blob([response.data], { type: "application/pdf" });
         this.pdfBlobUrl = URL.createObjectURL(blob);
       } catch (error) {
         console.error("Erro ao buscar arquivo do documento:", error);
       } finally {
-        // Encerra o skeleton do PDF
         this.loadingPDF = false;
       }
     },
@@ -134,14 +118,12 @@ export default {
       if (!this.documento) return;
       try {
         const payload = { document_ids: [this.documento.id] };
-        const response = await API.put("/client_serve/validado", payload);
+        const response = await API.put(`/validacao/enviar/${this.documento.id}`, payload);
         console.log("Resposta validação:", response.data);
 
-        // Exibe modal de sucesso
         this.successMessage = "Documento validado com sucesso!";
         this.successModalVisible = true;
 
-        // Após 4 segundos, fecha modal e retorna
         setTimeout(() => {
           this.successModalVisible = false;
           this.$router.push(`/validar/${this.documento.id_cliente}`);

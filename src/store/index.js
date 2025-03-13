@@ -1,8 +1,5 @@
 import { createStore } from 'vuex';
-import axios from 'axios';
-import API from '../services/apiService'; // Nosso axios com interceptor
-
-const API_URL = 'http://127.0.0.1:8000/api/v1/auth';
+import API from '../services/apiService';
 
 const store = createStore({
   state: {
@@ -25,17 +22,10 @@ const store = createStore({
   },
   actions: {
     async login({ commit, dispatch }, { email, password }) {
-      const formData = new URLSearchParams();
-      formData.append('username', email);
-      formData.append('password', password);
-
       try {
-        const response = await axios.post(`${API_URL}/login`, formData, {
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        });
+        const response = await API.post('/usuario/login', { email, senha: password });
         const { access_token } = response.data;
         commit('SET_TOKEN', access_token);
-        // Após login, busca os dados do usuário
         await dispatch('fetchUser');
         return true;
       } catch (error) {
@@ -44,7 +34,7 @@ const store = createStore({
     },
     async fetchUser({ commit }) {
       try {
-        const response = await API.get('/auth/me');
+        const response = await API.get('/usuario/me');
         commit('SET_USER', response.data);
       } catch (error) {
         commit('CLEAR_TOKEN');

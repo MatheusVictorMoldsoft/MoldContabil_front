@@ -71,7 +71,7 @@ export default {
       try {
         const success = await authService.login(this.email, this.password);
         if (success) {
-          this.$router.push('/');
+          this.$router.push({ name: 'dashboard' }); // Redireciona para a página correta
         }
       } catch (err) {
         this.error = err;
@@ -162,11 +162,16 @@ export default {
     /* Aumenta a altura do formulário em telas muito pequenas */
   }
 }
+
 .logo {
   margin-top: 5%;
-  max-width: 150px; /* Define a largura máxima da logo */
-  max-height: 150px; /* Define a altura máxima da logo */
-  width: auto; /* Mantém a proporção da imagem */
-  height: auto; /* Mantém a proporção da imagem */
+  max-width: 150px;
+  /* Define a largura máxima da logo */
+  max-height: 150px;
+  /* Define a altura máxima da logo */
+  width: auto;
+  /* Mantém a proporção da imagem */
+  height: auto;
+  /* Mantém a proporção da imagem */
 }
 </style>

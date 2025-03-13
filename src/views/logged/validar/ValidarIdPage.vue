@@ -3,23 +3,9 @@
     <h1 class="page-title">Validar ID</h1>
 
     <!-- Se loading, exibe skeleton; senão, mostra a tabela de fato -->
-    <v-skeleton-loader
-      v-if="loading"
-      type="table"
-      height="300"
-      class="mb-4"
-    />
-    <v-data-table
-      v-else
-      v-model="selected"
-      :headers="headers"
-      :items="documentos"
-      item-value="id"
-      show-select
-      class="elevation-1"
-      dense
-      @click:row="abrirDetalhes"
-    >
+    <v-skeleton-loader v-if="loading" type="table" height="300" class="mb-4" />
+    <v-data-table v-else v-model="selected" :headers="headers" :items="documentos" item-value="id" show-select
+      class="elevation-1" dense @click:row="abrirDetalhes">
       <!-- Formatações personalizadas para "status" -->
       <template v-slot:[`item.status`]="{ item }">
         <v-chip :color="getStatusColor(item.status)" dark>
@@ -39,13 +25,7 @@
     </v-data-table>
 
     <!-- Botão de validação visível apenas após o carregamento -->
-    <v-btn
-      v-if="!loading"
-      color="primary"
-      class="mt-4"
-      :disabled="selected.length === 0"
-      @click="validarSelecionados"
-    >
+    <v-btn v-if="!loading" color="primary" class="mt-4" :disabled="selected.length === 0" @click="validarSelecionados">
       Validar
     </v-btn>
   </v-container>
@@ -87,7 +67,7 @@ export default {
       console.log("IDs para validação:", this.selected);
       try {
         const payload = { document_ids: this.selected };
-        const response = await API.put("/client_serve/validado", payload, {
+        const response = await API.put("/documento/", payload, {
           headers: {
             "Accept": "application/json",
             "ngrok-skip-browser-warning": "true",
@@ -105,15 +85,10 @@ export default {
     async fetchDocumentos() {
       try {
         const cliente_id = this.$route.params.id;
-        const response = await API.get(
-          `/client_serve/documentos-pendentes/analise/${cliente_id}`,
-          {
-            headers: {
-              "Accept": "application/json",
-              "ngrok-skip-browser-warning": "true",
-            },
-          }
-        );
+        const response = await API.get(`/validacao/cliente/${cliente_id}`, {
+          headers: { Accept: "application/json" },
+        });
+
         if (Array.isArray(response.data)) {
           this.documentos = response.data;
         } else {
@@ -122,10 +97,10 @@ export default {
       } catch (error) {
         console.error("Erro ao buscar documentos de análise:", error);
       } finally {
-        // Após carregar, some o skeleton e mostre o botão
         this.loading = false;
       }
-    },
+    }
+    ,
   },
   mounted() {
     this.fetchDocumentos();

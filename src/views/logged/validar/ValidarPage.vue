@@ -4,18 +4,8 @@
       <v-card-title>Validar Documentos</v-card-title>
       <v-card-text>
         <!-- Se loading, exibe skeleton; senão, mostra a tabela -->
-        <v-skeleton-loader
-          v-if="loading"
-          type="paragraph"
-          :lines="3"
-          class="mb-4"
-        />
-        <v-data-table
-          v-else
-          :headers="headers"
-          :items="documentos"
-          class="clickable-table"
-        >
+        <v-skeleton-loader v-if="loading" type="paragraph" :lines="3" class="mb-4" />
+        <v-data-table v-else :headers="headers" :items="documentos" class="clickable-table">
           <template v-slot:item="{ item }">
             <tr @click="goToValidarId(item)">
               <td>{{ item.cliente }}</td>
@@ -53,11 +43,8 @@ export default {
   methods: {
     async fetchDocumentos() {
       try {
-        const response = await API.get('/client_serve/documentos-pendentes/', {
-          headers: {
-            Accept: "application/json",
-            "ngrok-skip-browser-warning": "true",
-          },
+        const response = await API.get('/validacao/empresa', {
+          headers: { Accept: "application/json" },
         });
 
         if (Array.isArray(response.data)) {
@@ -74,7 +61,6 @@ export default {
       } catch (error) {
         console.error("Erro ao buscar documentos:", error);
       } finally {
-        // Assim que a requisição terminar (sucesso ou erro), o skeleton some
         this.loading = false;
       }
     },
@@ -105,6 +91,7 @@ export default {
   cursor: pointer;
   transition: background 0.3s;
 }
+
 .clickable-table tbody tr:hover {
   background: #f5f5f5;
 }

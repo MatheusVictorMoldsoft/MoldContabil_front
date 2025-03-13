@@ -90,7 +90,7 @@
         this.loading = true;
         try {
           // Envia os dados para a API
-          await API.post("/cliente/cliente", this.cliente);
+          await API.post("/cliente", this.cliente);
   
           // Exibe o modal de sucesso
           this.successModal = true;

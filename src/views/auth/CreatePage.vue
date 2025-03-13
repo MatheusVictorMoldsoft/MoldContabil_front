@@ -8,21 +8,62 @@
             <img src="/images/logo.png" alt="Logo da Empresa" class="logo" />
           </div>
 
-          <v-toolbar color="white" dark flat>
+          <v-toolbar color="#FFFF" dark flat>
             <v-toolbar-title>Criar Conta</v-toolbar-title>
           </v-toolbar>
 
           <v-card-text>
             <v-form @submit.prevent="criarConta">
-              <v-text-field v-model="nome" label="Nome Completo" type="text" variant="outlined" required></v-text-field>
-              <v-text-field v-model="email" label="Email" type="email" variant="outlined" required></v-text-field>
-              <v-text-field v-model="senha" label="Senha" type="password" variant="outlined" required></v-text-field>
-              <v-text-field v-model="confirmarSenha" label="Confirmar Senha" type="password" variant="outlined" required></v-text-field>
-              <v-text-field v-model="empresa_id" label="ID da Empresa" type="text" variant="outlined" required></v-text-field>
+              <v-text-field
+                v-model="nome"
+                label="Nome Completo"
+                type="text"
+                variant="outlined"
+                required
+              ></v-text-field>
 
-              <v-checkbox v-model="aceitarTermos" label="Aceito os termos e condições" required></v-checkbox>
+              <v-text-field
+                v-model="email"
+                label="Email"
+                type="email"
+                variant="outlined"
+                required
+              ></v-text-field>
 
-              <v-btn type="submit" color="primary" block :loading="loading">Criar Conta</v-btn>
+              <v-text-field
+                v-model="senha"
+                label="Senha"
+                type="password"
+                variant="outlined"
+                required
+              ></v-text-field>
+
+              <v-text-field
+                v-model="confirmarSenha"
+                label="Confirmar Senha"
+                type="password"
+                variant="outlined"
+                required
+              ></v-text-field>
+
+              <!-- Campo de UUID -->
+              <v-text-field
+                v-model="empresa_id"
+                label="ID da Empresa (UUID)"
+                type="text"
+                variant="outlined"
+                required
+              ></v-text-field>
+
+              <v-checkbox
+                v-model="aceitarTermos"
+                label="Aceito os termos e condições"
+                required
+              ></v-checkbox>
+
+              <v-btn type="submit" color="primary" block :loading="loading">
+                Criar Conta
+              </v-btn>
             </v-form>
 
             <v-alert v-if="error" type="error" class="mt-3">{{ error }}</v-alert>
@@ -50,7 +91,8 @@ export default {
       email: "",
       senha: "",
       confirmarSenha: "",
-      empresa_id: "", // ID da empresa é obrigatório na API
+      // 'empresa_id' é UUID no backend
+      empresa_id: "",
       aceitarTermos: false,
       loading: false,
       error: null,
@@ -58,13 +100,22 @@ export default {
   },
   methods: {
     async criarConta() {
+      // Validação local das senhas
       if (this.senha !== this.confirmarSenha) {
         this.error = "As senhas não coincidem.";
         return;
       }
 
+      // Validação de termos
       if (!this.aceitarTermos) {
         this.error = "Você precisa aceitar os termos.";
+        return;
+      }
+
+      // Validação simples de UUID (opcional, mas recomendado)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(this.empresa_id)) {
+        this.error = "ID da empresa deve ser um UUID válido. Exemplo: 123e4567-e89b-12d3-a456-426655440000";
         return;
       }
 
@@ -72,11 +123,24 @@ export default {
       this.error = null;
 
       try {
-        await authService.register(this.nome, this.email, this.senha, this.empresa_id);
+        // Monta o payload exatamente com os campos que o FastAPI espera
+        await authService.register({
+          nome: this.nome,
+          email: this.email,
+          senha: this.senha,
+          empresa_id: this.empresa_id, // agora é de fato um UUID
+          status: true,                // se quiser definir true como padrão
+        });
+
         alert("Conta criada com sucesso!");
         this.$router.push("/login");
       } catch (err) {
-        this.error = err;
+        // Se estiver usando axios, as mensagens de erro do FastAPI costumam vir em err.response.data.detail
+        if (err.response && err.response.data && err.response.data.detail) {
+          this.error = err.response.data.detail;
+        } else {
+          this.error = "Ocorreu um erro ao criar a conta.";
+        }
       } finally {
         this.loading = false;
       }

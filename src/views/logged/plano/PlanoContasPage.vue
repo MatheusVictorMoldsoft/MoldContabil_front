@@ -5,30 +5,18 @@
         Plano de Contas
       </v-card-title>
       <v-card-text>
-        <v-form @submit.prevent="submitForm">
+        <v-form ref="form" @submit.prevent="submitForm">
           <!-- Campo de Seleção do Cliente -->
-          <v-select
-            v-model="form.cliente"
-            :items="clientes"
-            item-title="nome"
-            item-value="id"
-            label="Selecione o Cliente"
-            variant="outlined"
-            required
-          ></v-select>
+          <v-select v-model="form.cliente" :items="clientes" item-title="nome" item-value="id"
+            label="Selecione o Cliente" variant="outlined" required></v-select>
 
           <!-- Campo de Upload de Arquivo -->
-          <v-file-input
-            v-model="form.arquivo"
-            label="Anexar Arquivo"
-            variant="outlined"
-            :rules="arquivoRules"
-            accept=".pdf, .xlsx, .csv"
-            required
-          ></v-file-input>
+          <v-file-input v-model="form.arquivo" label="Anexar Arquivo" variant="outlined" :rules="arquivoRules"
+            accept=".xlsx" multiple required></v-file-input>
+
 
           <!-- Botão de Envio -->
-          <v-btn type="submit" color="primary" block class="mt-4">
+          <v-btn type="submit" color="primary" block class="mt-4" :loading="loading">
             Enviar
           </v-btn>
         </v-form>
@@ -38,77 +26,75 @@
 </template>
 
 <script>
-import API from "@/services/apiService"; // Importando a API centralizada
+import API from "@/services/apiService";
 
 export default {
+  name: "PlanoUpload",
   data() {
     return {
-      // Dados do formulário
       form: {
-        cliente: null, // Cliente selecionado
-        arquivo: null, // Arquivo selecionado
+        cliente: null, // ID do cliente
+        arquivo: null, // Arquivo selecionado (array)
       },
-
-      // Lista de clientes carregada da API
       clientes: [],
-
-      // Regras de validação para o campo de arquivo
+      loading: false,
+      errorMessage: null,
       arquivoRules: [
+        // Verifica tamanho (exemplo: 500 MB)
         (value) => {
-          return (
-            !value ||
-            !value.length ||
-            value[0].size < 5000000 || // Limite de 5MB
-            "O arquivo deve ter menos de 5MB!"
-          );
+          if (!value || !value.length) return true;
+          const file = value[0];
+          return file.size < 500_000_000 || "O arquivo deve ter menos de 500MB!";
         },
+        // Verifica extensão .xlsx
         (value) => {
-          return (
-            !value ||
-            !value.length ||
-            [".pdf", ".xlsx", ".csv"].includes(
-              value[0].name.slice(value[0].name.lastIndexOf("."))
-            ) || "Apenas arquivos PDF, XLSX ou CSV são permitidos!"
-          );
+          if (!value || !value.length) return true;
+          const file = value[0];
+          const extension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+          return extension === ".xlsx" || "Apenas arquivos XLSX são permitidos!";
         },
       ],
     };
   },
   methods: {
-    // Busca clientes da API ao carregar a página
     async fetchClientes() {
       try {
-        const response = await API.get("/cliente/clientes");
+        const response = await API.get("/clientes");
         this.clientes = response.data;
       } catch (error) {
         console.error("Erro ao carregar clientes:", error);
       }
     },
-
-    // Método para enviar o formulário
     async submitForm() {
-      if (this.form.cliente && this.form.arquivo) {
-        console.log("Formulário enviado:", this.form);
-
-        // Monta os dados do formulário
-        const formData = new FormData();
-        formData.append("cliente_id", this.form.cliente); // Envia o ID do cliente
-        formData.append("arquivo", this.form.arquivo[0]);
-
-        try {
-          await API.post("/plano-de-contas", formData);
-          alert("Formulário enviado com sucesso!");
-          this.resetForm();
-        } catch (error) {
-          console.error("Erro ao enviar formulário:", error);
-          alert("Erro ao enviar formulário.");
-        }
-      } else {
+      if (!this.form.cliente || !this.form.arquivo) {
         alert("Preencha todos os campos obrigatórios.");
+        return;
+      }
+      this.loading = true;
+      try {
+        // Monta o FormData com o arquivo
+        const formData = new FormData();
+        // v-file-input retorna um array, então usamos o primeiro arquivo
+        formData.append("arquivo", this.form.arquivo[0], this.form.arquivo[0].name);
+
+        // Constrói a URL com o query param id_cliente
+        const url = `/plano/importar?id_cliente=${this.form.cliente}`;
+        const response = await API.post(url, formData, {
+          timeout: 600000, // 10 minutos
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        alert("Formulário enviado com sucesso!");
+        console.log("Resposta do servidor:", response.data);
+        this.resetForm();
+      } catch (error) {
+        console.error("Erro ao enviar formulário:", error);
+        alert("Erro ao enviar formulário.");
+      } finally {
+        this.loading = false;
       }
     },
-
-    // Método para resetar o formulário
     resetForm() {
       this.form.cliente = null;
       this.form.arquivo = null;
@@ -121,5 +107,9 @@ export default {
 </script>
 
 <style scoped>
-/* Estilos personalizados, se necessário */
+.v-container {
+  max-width: 600px;
+  margin: auto;
+  padding-top: 20px;
+}
 </style>

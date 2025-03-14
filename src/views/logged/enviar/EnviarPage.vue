@@ -10,6 +10,8 @@
       class="mb-4"
     />
 
+    <div v-else-if="!documentos.length" class="text-center my-5">
+      Nenhum documento aguardando envio.</div>
     <!-- Tabela aparece quando loading é false -->
     <v-data-table
       v-else
@@ -30,7 +32,7 @@
 
       <!-- Formatação para valor -->
       <template v-slot:[`item.valor`]="{ item }">
-        R$ {{ item.valor.toFixed(2) }}
+        R$ {{ item.valor ? item.valor.toFixed(2) : '0.00' }}
       </template>
     </v-data-table>
 
@@ -53,13 +55,17 @@ import API from "@/services/apiService";
 export default {
   data() {
     return {
-      loading: true,      // Controla skeleton e tabela
-      selected: [],       // IDs dos docs selecionados
-      documentos: [],     // Lista de documentos vindos da API
+      loading: true,
+      selected: [],
+      documentos: [],
       headers: [
         { title: "ID", key: "id", sortable: true },
-        { title: "Conta Débito", key: "cod_conta_debito" },
-        { title: "Conta Crédito", key: "cod_conta_credito" },
+        { title: "Conta Débito", key: "conta_debito" },
+        { title: "Conta Crédito", key: "conta_credito" },
+        { title: "Nome Conta Débito", key: "nome_da_conta_debito" },
+        { title: "Nome Conta Crédito", key: "nome_da_conta_credito" },
+        { title: "Path File", key: "path_file" },
+        { title: "Complemento Histórico", key: "complemento_historico" },
         { title: "Valor", key: "valor" },
         { title: "Nome Documento", key: "nome_documento" },
         { title: "Status", key: "status" },
@@ -68,7 +74,6 @@ export default {
   },
   methods: {
     getStatusText(status) {
-      // Exemplo: se status=1 => "Validado", se=2 => "Enviado", etc.
       if (status === 1) return "Validado";
       if (status === 2) return "Enviado";
       return "Pendente";
@@ -77,20 +82,9 @@ export default {
       return status === 2 ? "green" : status === 1 ? "blue" : "orange";
     },
 
-    // Busca os documentos com status=1 (ex: "Validado") via rota /client_serve/enviar
     async fetchDocumentos() {
       try {
-        const response = await API.get("/client_serve/enviar");
-        // Exemplo de cada objeto:
-        // {
-        //   id: 1,
-        //   conta_debito: "2.1.5",
-        //   conta_credito: "3.1.1",
-        //   valor: 391.16,
-        //   nome_documento: "file\\...",
-        //   status: 1,
-        //   ...
-        // }
+        const response = await API.get("/enviar/documentos");
         if (Array.isArray(response.data)) {
           this.documentos = response.data;
         } else {
@@ -103,30 +97,22 @@ export default {
       }
     },
 
-    // Ao clicar no botão "Enviar Documentos"
     async enviarDocumentos() {
       if (this.selected.length === 0) {
         alert("Selecione pelo menos um documento.");
         return;
       }
+
       try {
-        // 1) Atualiza o status para 2 no backend
-        const payload = { document_ids: this.selected };
-        await API.put("/client_serve/enviar-update", payload);
-        console.log("Documentos atualizados para status=2:", this.selected);
+        const response = await API.put(
+          `/validacao/enviar`,
+          { document_ids: this.selected },
+          { responseType: "blob" }
+        );
 
-        // 2) Baixa um arquivo .txt com as linhas no formato especificado
-        //    Pegamos os docs selecionados e geramos as linhas
-        const selectedDocs = this.documentos.filter(d => this.selected.includes(d.id));
-        const lines = selectedDocs.map(doc => this.gerarLinhaTxt(doc));
+        this.baixarArquivo(response.data, `documentos_${Date.now()}.txt`);
 
-        // Cria o conteúdo final (unindo cada linha com quebra de linha)
-        const content = lines.join("\n");
-
-        // Dispara o download do arquivo .txt
-        this.baixarArquivoTxt(content, "documentos_enviados.txt");
-
-        // Opcional: Remover seleção / recarregar lista
+        alert("Documentos enviados com sucesso!");
         this.selected = [];
         this.fetchDocumentos();
       } catch (error) {
@@ -135,36 +121,15 @@ export default {
       }
     },
 
-    // Gera 1 linha no formato:
-    // dataAtual;cod_conta_debito;cod_conta_credito;valor;10;Referente ao Pagamento da NF XXXX;1;9999;1;1
-    gerarLinhaTxt(doc) {
-      // Data atual (DD/MM/YYYY)
-      const now = new Date();
-      const dd = String(now.getDate()).padStart(2, "0");
-      const mm = String(now.getMonth() + 1).padStart(2, "0");
-      const yyyy = now.getFullYear();
-      const dataStr = `${dd}/${mm}/${yyyy}`;
-
-      // Ajuste conforme o exemplo fornecido. AQUI estamos usando 10 colunas
-      // Caso só queira date/debito/credito/valor, reduza.
-      return `${dataStr};${doc.conta_debito || ""};${doc.conta_credito || ""};${doc.valor || ""};10;Referente ao Pagamento da NF XXXX;1;9999;1;1`;
-    },
-
-    // Cria um Blob e força o download de um arquivo .txt
-    baixarArquivoTxt(conteudo, nomeArquivo) {
-      const blob = new Blob([conteudo], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-
-      // Cria um link para "baixar" o arquivo
+    baixarArquivo(blob, filename) {
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = nomeArquivo;
+      link.setAttribute("download", filename);
       document.body.appendChild(link);
       link.click();
-
-      // Remove o link temporário
       document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(url);
     },
   },
   mounted() {

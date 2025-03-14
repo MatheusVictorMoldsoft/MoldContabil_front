@@ -4,8 +4,19 @@
 
     <!-- Se loading, exibe skeleton; senão, mostra a tabela de fato -->
     <v-skeleton-loader v-if="loading" type="table" height="300" class="mb-4" />
-    <v-data-table v-else v-model="selected" :headers="headers" :items="documentos" item-value="id" show-select
-      class="elevation-1" dense @click:row="abrirDetalhes">
+    <div v-else-if="!documentos.length" class="text-center my-5">
+      Nenhum documento aguardando Validaçãox.</div>
+    <v-data-table
+      v-else
+      v-model="selected"
+      :headers="headers"
+      :items="documentos"
+      item-value="id"
+      show-select
+      class="elevation-1"
+      dense
+      @click:row="abrirDetalhes"
+    >
       <!-- Formatações personalizadas para "status" -->
       <template v-slot:[`item.status`]="{ item }">
         <v-chip :color="getStatusColor(item.status)" dark>
@@ -15,7 +26,7 @@
 
       <!-- Formatação personalizada para "valor" -->
       <template v-slot:[`item.valor`]="{ item }">
-        R$ {{ item.valor.toFixed(2) }}
+        R$ {{ item.valor ? item.valor.toFixed(2) : '0.00' }}
       </template>
 
       <!-- Nova coluna "Ações", com botão "Detalhar" -->
@@ -42,24 +53,33 @@ export default {
       documentos: [],
       headers: [
         { title: "ID", key: "id", sortable: true },
-        { title: "Conta Débito", key: "cod_conta_debito" },
-        { title: "Conta Crédito", key: "cod_conta_credito" },
+        { title: "Conta Débito", key: "conta_debito" },
+        { title: "Nome Conta Débito", key: "nome_da_conta_debito" },
+        { title: "Conta Crédito", key: "conta_credito" },
+        { title: "Nome Conta Crédito", key: "nome_da_conta_credito" },
         { title: "Valor", key: "valor" },
         { title: "Documento", key: "nome_documento" },
+        { title: "Histórico", key: "complemento_historico" },
         { title: "Status", key: "status" },
         { title: "Ações", key: "detalhar", sortable: false },
       ],
     };
   },
   methods: {
+    // Ajuste para diferenciar status 0 e 1
     getStatusText(status) {
-      return status === 0 ? "Pendente" : "Aprovado";
+      if (status === 0) return "Pendente";
+      if (status === 1) return "Aprovado";
+      return "Pendente";
     },
     getStatusColor(status) {
-      return status === 0 ? "orange" : "green";
+      if (status === 0) return "orange";
+      if (status === 1) return "green";
+      return "orange";
     },
 
     abrirDetalhes(item) {
+      // Redireciona para a rota de análise/detalhes do documento
       this.$router.push(`/validar/analise/${item.id}`);
     },
 
@@ -67,6 +87,7 @@ export default {
       console.log("IDs para validação:", this.selected);
       try {
         const payload = { document_ids: this.selected };
+        // Ajuste a rota conforme sua API real
         const response = await API.put("/documento/", payload, {
           headers: {
             "Accept": "application/json",
@@ -99,8 +120,7 @@ export default {
       } finally {
         this.loading = false;
       }
-    }
-    ,
+    },
   },
   mounted() {
     this.fetchDocumentos();
@@ -109,9 +129,22 @@ export default {
 </script>
 
 <style scoped>
+/* Título um pouco menor */
 .page-title {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: bold;
   margin-bottom: 20px;
+}
+
+/* Reduz a fonte da tabela */
+.v-data-table {
+  font-size: 0.9rem;
+}
+
+/* Em telas menores, a fonte fica ainda menor para caber melhor */
+@media (max-width: 600px) {
+  .v-data-table {
+    font-size: 0.8rem;
+  }
 }
 </style>

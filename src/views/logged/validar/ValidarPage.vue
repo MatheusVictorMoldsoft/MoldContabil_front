@@ -5,6 +5,8 @@
       <v-card-text>
         <!-- Se loading, exibe skeleton; senão, mostra a tabela -->
         <v-skeleton-loader v-if="loading" type="paragraph" :lines="3" class="mb-4" />
+        <div v-else-if="!documentos.length" class="text-center my-5">
+          Nenhum documento aguardando Validação.</div>
         <v-data-table v-else :headers="headers" :items="documentos" class="clickable-table">
           <template v-slot:item="{ item }">
             <tr @click="goToValidarId(item)">

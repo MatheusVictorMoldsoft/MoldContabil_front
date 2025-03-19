@@ -23,7 +23,7 @@
 
               <v-text-field v-model="password" label="Senha" type="password" variant="outlined" required></v-text-field>
 
-              <v-btn type="submit" color="primary" block :loading="loading">Realizar Acesso</v-btn>
+              <v-btn type="submit" color="secondary" block :loading="loading">Realizar Acesso</v-btn>
             </v-form>
 
             <v-btn variant="text" class="mt-2 forgot-password">
@@ -42,7 +42,7 @@
 
           <v-card-actions>
             <v-spacer></v-spacer>
-            <v-btn text color="primary" @click="$router.push('/criar-conta')">
+            <v-btn text color="secondary" @click="$router.push('/criar-conta')">
               Criar Conta
             </v-btn>
           </v-card-actions>

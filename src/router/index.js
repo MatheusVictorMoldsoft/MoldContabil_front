@@ -7,11 +7,13 @@ import ValidarId from '../views/logged/validar/ValidarIdPage.vue';
 import DefaultLayout from '../layouts/DefaultLayout.vue';
 import Plano from '@/views/logged/plano/PlanoContasPage.vue'
 import ValidarAnalise from '@/views/logged/validar/ValidarAnalise.vue';
-import Enviar from '@/views/logged/enviar/EnviarPage.vue';
+import EnviarCliente from '@/views/logged/enviar/EnviarPage.vue';
+import EnviarPorId from '@/views/logged/enviar/EnviarClientePage.vue';
 import Suporte from '@/views/logged/suporte/SuportePage.vue';
 import Profile from '@/views/logged/profile/ProfilePage.vue';
 import Cliente from '@/views/logged/clientes/ClientePage.vue';
 import ClienteCreate  from '@/views/logged/clientes/ClienteCreate.vue';
+import ClienteEdit  from '@/views/logged/clientes/ClienteEdit.vue';
 import store from '../store'; 
 
 const routes = [
@@ -34,12 +36,14 @@ const routes = [
         { path: '/validar', name: 'Validar', component: Validar },
         { path: '/validar/:id', name: 'ValidarId', component: ValidarId },
         { path: '/validar/analise/:docId', name: 'ValidarAnalise', component: ValidarAnalise },
-        { path: '/enviar' ,name: 'Enviar', component: Enviar },
+        { path: '/enviar' ,name: 'Enviar', component: EnviarCliente },
+        { path: '/enviar/:id' ,name: 'EnviarPorId', component: EnviarPorId },
         { path: '/plano-de-contas' ,name: 'PlanoContas', component: Plano },
         { path: '/suporte' ,name: 'Suporte', component: Suporte },
         { path: '/perfil' ,name: 'Profile', component: Profile },
         { path: '/clientes' ,name: 'Cliente', component: Cliente},
-        { path: '/clientes/create' ,name: 'ClienteCreate', component: ClienteCreate}
+        { path: '/clientes/create' ,name: 'ClienteCreate', component: ClienteCreate},
+        { path: '/clientes/edit/:id',name:'ClienteEdit', component: ClienteEdit}
       ],
     },
   ];

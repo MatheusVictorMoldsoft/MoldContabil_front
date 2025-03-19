@@ -29,7 +29,7 @@
 
               <v-checkbox v-model="aceitarTermos" label="Aceito os termos e condições" required></v-checkbox>
 
-              <v-btn type="submit" color="primary" block :loading="loading">
+              <v-btn type="submit" color="secondary" block :loading="loading">
                 Criar Conta
               </v-btn>
             </v-form>
@@ -38,7 +38,7 @@
 
             <div class="mt-4 text-center">
               Já tem uma conta?
-              <v-btn variant="text" color="primary" @click="$router.push('/login')">
+              <v-btn variant="text" color="secondary" @click="$router.push('/login')">
                 Faça Login
               </v-btn>
             </div>

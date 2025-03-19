@@ -1,55 +1,85 @@
 <template>
-  <v-container>
-    <h1 class="page-title">Validar ID</h1>
+  <v-container fluid class="fill-height pa-0">
+    <v-row no-gutters>
+      <v-col cols="12">
+        <div class="page-header px-6 py-4 rounded-lg">
+          <h1 class="text-h4 font-weight-medium">
+            Validação
+          </h1>
+          <v-spacer></v-spacer>
+          <v-btn
+            color="secondary"
+            elevation="1"
+            prepend-icon="mdi-arrow-left"
+            @click="$router.push('/validar')"
+            class="text-none px-4"
+            rounded
+          >
+            Voltar
+          </v-btn>
+        </div>
 
-    <!-- Se loading, exibe skeleton; senão, mostra a tabela de fato -->
-    <v-skeleton-loader v-if="loading" type="table" height="300" class="mb-4" />
-    <div v-else-if="!documentos.length" class="text-center my-5">
-      Nenhum documento aguardando Validaçãox.</div>
-    <v-data-table
-      v-else
-      v-model="selected"
-      :headers="headers"
-      :items="documentos"
-      item-value="id"
-      show-select
-      class="elevation-1"
-      dense
-      @click:row="abrirDetalhes"
-    >
-      <!-- Formatações personalizadas para "status" -->
-      <template v-slot:[`item.status`]="{ item }">
-        <v-chip :color="getStatusColor(item.status)" dark>
-          {{ getStatusText(item.status) }}
-        </v-chip>
-      </template>
+        <v-card class="mx-4 mt-2 mb-6 rounded-lg" elevation="3">
+          <v-card-text class="pa-6">
+            <!-- Exibe skeleton se estiver carregando -->
+            <v-skeleton-loader v-if="loading" type="table" height="300" class="mb-4" />
 
-      <!-- Formatação personalizada para "valor" -->
-      <template v-slot:[`item.valor`]="{ item }">
-        R$ {{ item.valor ? item.valor.toFixed(2) : '0.00' }}
-      </template>
+            <!-- Mensagem caso não haja documentos -->
+            <v-alert v-else-if="!documentos.length" type="info" variant="tonal" class="mb-4">
+              Nenhum documento aguardando validação.
+            </v-alert>
 
-      <!-- Nova coluna "Ações", com botão "Detalhar" -->
-      <template v-slot:[`item.detalhar`]="{ item }">
-        <v-btn color="primary" @click.stop="abrirDetalhes(item)">Detalhar</v-btn>
-      </template>
-    </v-data-table>
+            <!-- Tabela de documentos -->
+            <v-data-table
+              v-else
+              v-model="selected"
+              :headers="headers"
+              :items="documentos"
+              item-value="id"
+              show-select
+              class="elevation-1 rounded-lg"
+              dense
+            >
+              <template v-slot:[`item.status`]="{ item }">
+                <v-chip :color="getStatusColor(item.status)" size="small" class="text-caption" variant="tonal">
+                  {{ getStatusText(item.status) }}
+                </v-chip>
+              </template>
 
-    <!-- Botão de validação visível apenas após o carregamento -->
-    <v-btn v-if="!loading" color="primary" class="mt-4" :disabled="selected.length === 0" @click="validarSelecionados">
-      Validar
-    </v-btn>
+              <template v-slot:[`item.valor`]="{ item }">
+                R$ {{ item.valor ? item.valor.toFixed(2) : '0.00' }}
+              </template>
+
+              <template v-slot:[`item.detalhar`]="{ item }">
+                <v-btn color="secondary" @click.stop="abrirDetalhes(item)">Detalhar</v-btn>
+              </template>
+            </v-data-table>
+
+            <!-- Botão de validação -->
+            <v-btn
+              v-if="!loading"
+              color="secondary"
+              class="mt-4"
+              :disabled="selected.length === 0"
+              @click="validarSelecionados"
+            >
+              Validar
+            </v-btn>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
   </v-container>
 </template>
 
 <script>
-import API from '@/services/apiService';
+import API from "@/services/apiService";
 
 export default {
   data() {
     return {
-      loading: true, // Controla o skeleton e a exibição do botão
-      selected: [],  // IDs selecionados
+      loading: true,
+      selected: [],
       documentos: [],
       headers: [
         { title: "ID", key: "id", sortable: true },
@@ -66,34 +96,28 @@ export default {
     };
   },
   methods: {
-    // Ajuste para diferenciar status 0 e 1
     getStatusText(status) {
-      if (status === 0) return "Pendente";
-      if (status === 1) return "Aprovado";
-      return "Pendente";
+      return status === 0 ? "Pendente" : "Pendente";
     },
     getStatusColor(status) {
-      if (status === 0) return "orange";
-      if (status === 1) return "green";
-      return "orange";
+      return status === 0 ? "orange" : "orange";
     },
-
     abrirDetalhes(item) {
-      // Redireciona para a rota de análise/detalhes do documento
       this.$router.push(`/validar/analise/${item.id}`);
     },
-
     async validarSelecionados() {
       console.log("IDs para validação:", this.selected);
+      if (!this.selected.length) {
+        alert("Nenhum documento selecionado.");
+        return;
+      }
+
       try {
         const payload = { document_ids: this.selected };
-        // Ajuste a rota conforme sua API real
-        const response = await API.put("/documento/", payload, {
-          headers: {
-            "Accept": "application/json",
-            "ngrok-skip-browser-warning": "true",
-          },
+        const response = await API.put("/validacao/atualizar-status", payload, {
+          headers: { Accept: "application/json" },
         });
+
         console.log("Resposta da validação:", response.data);
         alert("Documentos validados com sucesso!");
         this.fetchDocumentos();
@@ -102,7 +126,6 @@ export default {
         alert("Erro ao validar documentos");
       }
     },
-
     async fetchDocumentos() {
       try {
         const cliente_id = this.$route.params.id;
@@ -129,19 +152,18 @@ export default {
 </script>
 
 <style scoped>
-/* Título um pouco menor */
-.page-title {
-  font-size: 1.3rem;
-  font-weight: bold;
-  margin-bottom: 20px;
+.page-header {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, var(--v-primary-lighten-5, #e3f2fd) 0%, var(--v-surface-base, #0a2559) 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-/* Reduz a fonte da tabela */
 .v-data-table {
   font-size: 0.9rem;
 }
 
-/* Em telas menores, a fonte fica ainda menor para caber melhor */
+/* Em telas menores, a fonte fica menor para melhor ajuste */
 @media (max-width: 600px) {
   .v-data-table {
     font-size: 0.8rem;

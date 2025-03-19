@@ -1,43 +1,64 @@
 <template>
-  <v-container>
-    <v-card>
-      <v-card-title>Validar Documentos</v-card-title>
-      <v-card-text>
-        <!-- Se loading, exibe skeleton; senão, mostra a tabela -->
-        <v-skeleton-loader v-if="loading" type="paragraph" :lines="3" class="mb-4" />
-        <div v-else-if="!documentos.length" class="text-center my-5">
-          Nenhum documento aguardando Validaçãox.</div>
-        <v-data-table v-else :headers="headers" :items="documentos" class="clickable-table">
-          <template v-slot:item="{ item }">
-            <tr @click="goToValidarId(item)">
-              <td>{{ item.cliente }}</td>
-              <td>{{ item.cnpj_cpf }}</td>
-              <td>{{ item.qtd_documentos }}</td>
-              <td>
-                <v-chip :color="getStatusColor(item.status)" dark>
-                  {{ getStatusText(item.status) }}
-                </v-chip>
-              </td>
-            </tr>
-          </template>
-        </v-data-table>
-      </v-card-text>
-    </v-card>
+  <v-container fluid class="fill-height pa-0">
+    <v-row no-gutters>
+      <v-col cols="12">
+        <div class="page-header px-6 py-4 rounded-lg">
+          <h1 class="text-h4 font-weight-medium">
+            Validar Documentos
+          </h1>
+        </div>
+
+        <v-card class="mx-4 mt-2 mb-6 rounded-lg" elevation="3">
+          <v-card-text class="pa-6">
+            <!-- Exibe skeleton se estiver carregando -->
+            <v-skeleton-loader v-if="loading" type="table-row" :lines="5" class="mb-4" />
+
+            <!-- Mensagem caso não haja documentos -->
+            <v-alert v-else-if="!documentos.length" type="info" variant="tonal" class="mb-4">
+              Nenhum documento aguardando validação.
+            </v-alert>
+
+            <!-- Tabela de documentos -->
+            <v-data-table
+              v-else
+              :headers="headers"
+              :items="documentos"
+              class="clickable-table elevation-1 rounded-lg"
+              hover
+              no-data-text="Nenhum documento encontrado"
+            >
+              <template v-slot:item="{ item }">
+                <tr @click="goToValidarId(item)">
+                  <td>{{ item.cliente }}</td>
+                  <td>{{ item.cnpj_cpf }}</td>
+                  <td>{{ item.qtd_documentos }}</td>
+                  <td>
+                    <v-chip :color="getStatusColor(item.status)" size="small" class="text-caption" variant="tonal">
+                      {{ getStatusText(item.status) }}
+                    </v-chip>
+                  </td>
+                </tr>
+              </template>
+            </v-data-table>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
   </v-container>
 </template>
 
 <script>
-import API from '@/services/apiService';
+import API from "@/services/apiService";
 
 export default {
   data() {
     return {
-      loading: true, // Controla a exibição do skeleton
+      loading: true,
       headers: [
-        { title: "Cliente", key: "cliente" },
-        { title: "CNPJ/CPF", key: "cnpj_cpf" },
-        { title: "Qtd Documentos", key: "qtd_documentos" },
-        { title: "Status", key: "status" },
+        { title: "Cliente", align: "start", key: "cliente", sortable: true },
+        { title: "CNPJ/CPF", align: "start", key: "cnpj_cpf", sortable: true },
+        { title: "Qtd Documentos", align: "center", key: "qtd_documentos", sortable: true },
+        { title: "Status", align: "center", key: "status", sortable: true },
       ],
       documentos: [],
     };
@@ -45,7 +66,7 @@ export default {
   methods: {
     async fetchDocumentos() {
       try {
-        const response = await API.get('/validacao/empresa', {
+        const response = await API.get("/validacao/empresa", {
           headers: { Accept: "application/json" },
         });
 
@@ -73,8 +94,6 @@ export default {
       return status === "Pendente" ? "red" : "green";
     },
     goToValidarId(item) {
-      console.log("Item completo:", item);
-      console.log("ID da rota:", item.id);
       if (item.id) {
         this.$router.push(`/validar/${item.id}`);
       } else {
@@ -89,12 +108,19 @@ export default {
 </script>
 
 <style scoped>
+.page-header {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, var(--v-primary-lighten-5, #e3f2fd) 0%, var(--v-surface-base, #0a2559) 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06); 
+}
+
 .clickable-table tbody tr {
   cursor: pointer;
   transition: background 0.3s;
 }
 
 .clickable-table tbody tr:hover {
-  background: #f5f5f5;
+  background: rgba(var(--v-theme-primary), 0.04) !important;
 }
 </style>

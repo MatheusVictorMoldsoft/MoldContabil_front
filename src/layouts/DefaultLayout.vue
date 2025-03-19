@@ -8,10 +8,10 @@
         @mouseover="miniVariant = false"
         @mouseleave="miniVariant = true"
         rail-width="64"
-        color="primary"
+        color="#0a2559"
       >
         <!-- Navbar do menu lateral -->
-        <v-toolbar color="secondary" dark flat>
+        <v-toolbar color="#0a2559" dark flat>
           <div :class="['logo-wrapper', { 'logo-wrapper-mini': miniVariant }]">
             <img
               :src="miniVariant ? '/images/Ativo1.png' : '/images/Ativo4.png'"
@@ -35,7 +35,7 @@
   
         <!-- Botão de Perfil e Logout -->
         <template v-slot:append>
-          <v-list-item to="/perfil" prepend-icon="mdi-cog" title="Perfil" class="menu-item"></v-list-item>
+          <!-- <v-list-item to="/perfil" prepend-icon="mdi-cog" title="Perfil" class="menu-item"></v-list-item> -->
           <v-list-item @click="logout" prepend-icon="mdi-logout" title="Logout" class="menu-item"></v-list-item>
         </template>
       </v-navigation-drawer>
@@ -61,7 +61,7 @@
           { title: "Enviar", icon: "mdi-send", route: "/enviar" },
           { title: "Plano de Contas", icon: "mdi-chart-bar", route: "/plano-de-contas" },
           { title: "Clientes", icon: "mdi-account-group", route: "/clientes" },
-          { title: "Suporte", icon: "mdi-help-circle", route: "/suporte" },
+          // { title: "Suporte", icon: "mdi-help-circle", route: "/suporte" },
         ],
       };
     },

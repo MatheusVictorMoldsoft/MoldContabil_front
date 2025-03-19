@@ -1,27 +1,98 @@
 <template>
-  <v-container>
-    <v-card class="mx-auto" max-width="600">
-      <v-card-title class="text-h5 font-weight-bold">
-        Plano de Contas
-      </v-card-title>
-      <v-card-text>
-        <v-form ref="form" @submit.prevent="submitForm">
-          <!-- Campo de Seleção do Cliente -->
-          <v-select v-model="form.cliente" :items="clientes" item-title="nome" item-value="id"
-            label="Selecione o Cliente" variant="outlined" required></v-select>
+  <v-container fluid class="fill-height pa-0">
+    <v-row no-gutters>
+      <v-col cols="12">
+        <div class="page-header px-6 py-4 rounded-lg">
+          <h1 class="text-h4 font-weight-medium">
+            Plano de Contas
+          </h1>
+          <v-spacer></v-spacer>
+          <!-- <v-btn
+            color="secondary"
+            elevation="1"
+            prepend-icon="mdi-arrow-left"
+            @click="$router.go(-1)"
+            class="text-none px-4"
+            rounded
+          >
+            Voltar
+          </v-btn> -->
+        </div>
 
-          <!-- Campo de Upload de Arquivo -->
-          <v-file-input v-model="form.arquivo" label="Anexar Arquivo" variant="outlined" :rules="arquivoRules"
-            accept=".xlsx" multiple required></v-file-input>
+        <v-card class="mx-4 mt-2 mb-6 rounded-lg" elevation="3">
+          <!-- Alertas de Erro e Sucesso -->
+          <v-alert
+            v-if="errorMessage"
+            type="error"
+            variant="tonal"
+            icon="mdi-alert-circle"
+            border="start"
+            closable
+            class="mb-0 rounded-0"
+            @click:close="errorMessage = null"
+          >
+            {{ errorMessage }}
+          </v-alert>
 
+          <v-alert
+            v-if="successMessage"
+            type="success"
+            variant="tonal"
+            icon="mdi-check-circle"
+            border="start"
+            closable
+            class="mb-0 rounded-0"
+            @click:close="successMessage = null"
+          >
+            {{ successMessage }}
+          </v-alert>
 
-          <!-- Botão de Envio -->
-          <v-btn type="submit" color="primary" block class="mt-4" :loading="loading">
-            Enviar
-          </v-btn>
-        </v-form>
-      </v-card-text>
-    </v-card>
+          <v-card-text class="pa-4">
+            <v-form ref="form" @submit.prevent="submitForm">
+              <v-row class="mb-2">
+                <!-- Campo de Seleção do Cliente -->
+                <v-col cols="12" sm="6">
+                  <v-select
+                    v-model="form.cliente"
+                    :items="clientes"
+                    item-title="nome"
+                    item-value="id"
+                    label="Selecione o Cliente"
+                    variant="outlined"
+                    required
+                  ></v-select>
+                </v-col>
+
+                <!-- Campo de Upload de Arquivo -->
+                <v-col cols="12" sm="6">
+                  <v-file-input
+                    v-model="form.arquivo"
+                    label="Anexar Arquivo (Apenas formato XLSX)"
+                    variant="outlined"
+                    :rules="arquivoRules"
+                    accept=".xlsx"
+                    multiple
+                    required
+                  ></v-file-input>
+                </v-col>
+              </v-row>
+
+              <!-- Botão de Envio -->
+              <v-row justify="end">
+                <v-btn
+                  type="submit"
+                  color="secondary"
+                  class="text-none px-6"
+                  :loading="loading"
+                >
+                  Enviar
+                </v-btn>
+              </v-row>
+            </v-form>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
   </v-container>
 </template>
 
@@ -33,20 +104,19 @@ export default {
   data() {
     return {
       form: {
-        cliente: null, // ID do cliente
-        arquivo: null, // Arquivo selecionado (array)
+        cliente: null,
+        arquivo: null,
       },
       clientes: [],
       loading: false,
       errorMessage: null,
+      successMessage: null,
       arquivoRules: [
-        // Verifica tamanho (exemplo: 500 MB)
         (value) => {
           if (!value || !value.length) return true;
           const file = value[0];
           return file.size < 500_000_000 || "O arquivo deve ter menos de 500MB!";
         },
-        // Verifica extensão .xlsx
         (value) => {
           if (!value || !value.length) return true;
           const file = value[0];
@@ -67,30 +137,27 @@ export default {
     },
     async submitForm() {
       if (!this.form.cliente || !this.form.arquivo) {
-        alert("Preencha todos os campos obrigatórios.");
+        this.errorMessage = "Preencha todos os campos obrigatórios.";
         return;
       }
       this.loading = true;
       try {
-        // Monta o FormData com o arquivo
         const formData = new FormData();
-        // v-file-input retorna um array, então usamos o primeiro arquivo
         formData.append("arquivo", this.form.arquivo[0], this.form.arquivo[0].name);
 
-        // Constrói a URL com o query param id_cliente
         const url = `/plano/importar?id_cliente=${this.form.cliente}`;
-        const response = await API.post(url, formData, {
-          timeout: 600000, // 10 minutos
+        await API.post(url, formData, {
+          timeout: 600000,
           headers: {
             "Content-Type": "multipart/form-data",
           },
         });
-        alert("Formulário enviado com sucesso!");
-        console.log("Resposta do servidor:", response.data);
+
+        this.successMessage = "Formulário enviado com sucesso!";
         this.resetForm();
       } catch (error) {
+        this.errorMessage = "Erro ao enviar formulário.";
         console.error("Erro ao enviar formulário:", error);
-        alert("Erro ao enviar formulário.");
       } finally {
         this.loading = false;
       }
@@ -107,9 +174,19 @@ export default {
 </script>
 
 <style scoped>
-.v-container {
-  max-width: 600px;
-  margin: auto;
-  padding-top: 20px;
+.page-header {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, var(--v-primary-lighten-5, #e3f2fd) 0%, var(--v-surface-base, #0a2559) 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+:deep(.v-btn.v-btn--density-comfortable) {
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+:deep(.v-btn.v-btn--density-comfortable:hover) {
+  opacity: 1;
 }
 </style>

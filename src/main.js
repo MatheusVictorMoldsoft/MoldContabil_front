@@ -9,6 +9,18 @@ import VueApexCharts from 'vue3-apexcharts';
 loadFonts()
 
 const app = createApp(App);
+const resizeObserverErr = () => {
+  let debounce;
+  window.addEventListener('error', (e) => {
+    if (e.message === 'ResizeObserver loop completed with undelivered notifications.') {
+      e.stopImmediatePropagation();
+      clearTimeout(debounce);
+      debounce = setTimeout(() => console.clear(), 200);
+    }
+  });
+};
+resizeObserverErr();
+
 
 // Registra "perfect-scrollbar" como elemento customizado para evitar erro de resolução
 app.config.compilerOptions.isCustomElement = (tag) => tag === 'perfect-scrollbar';

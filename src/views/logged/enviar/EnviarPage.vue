@@ -1,51 +1,50 @@
 <template>
-  <v-container>
-    <h1 class="page-title">Enviar Documentos</h1>
+  <v-container fluid class="fill-height pa-0">
+    <v-row no-gutters>
+      <v-col cols="12">
+        <div class="page-header px-6 py-4 rounded-lg">
+          <h1 class="text-h4 font-weight-medium">
+            Enviar Documentos
+          </h1>
+          <v-spacer></v-spacer>
+        </div>
 
-    <!-- Skeleton enquanto loading é true -->
-    <v-skeleton-loader
-      v-if="loading"
-      type="table"
-      height="300"
-      class="mb-4"
-    />
+        <v-card class="mx-4 mt-2 mb-6 rounded-lg" elevation="3">
+          <v-card-text class="pa-6">
+            <!-- Exibe skeleton se estiver carregando -->
+            <v-skeleton-loader v-if="loading" type="table-row" :lines="5" class="mb-4" />
 
-    <div v-else-if="!documentos.length" class="text-center my-5">
-      Nenhum documento aguardando envio.</div>
-    <!-- Tabela aparece quando loading é false -->
-    <v-data-table
-      v-else
-      v-model="selected"
-      :headers="headers"
-      :items="documentos"
-      item-value="id"
-      show-select
-      class="elevation-1"
-      dense
-    >
-      <!-- Exibe o chip com a cor baseada em status -->
-      <template v-slot:[`item.status`]="{ item }">
-        <v-chip :color="getStatusColor(item.status)" small>
-          {{ getStatusText(item.status) }}
-        </v-chip>
-      </template>
+            <!-- Mensagem caso não haja documentos -->
+            <v-alert v-else-if="!documentos.length" type="info" variant="tonal" class="mb-4">
+              Nenhum documento aguardando validação.
+            </v-alert>
 
-      <!-- Formatação para valor -->
-      <template v-slot:[`item.valor`]="{ item }">
-        R$ {{ item.valor ? item.valor.toFixed(2) : '0.00' }}
-      </template>
-    </v-data-table>
-
-    <!-- Botão para enviar documentos -->
-    <v-btn
-      v-if="!loading"
-      color="primary"
-      class="mt-4"
-      :disabled="selected.length === 0"
-      @click="enviarDocumentos"
-    >
-      Enviar Documentos
-    </v-btn>
+            <!-- Tabela de documentos -->
+            <v-data-table
+              v-else
+              :headers="headers"
+              :items="documentos"
+              class="clickable-table elevation-1 rounded-lg"
+              hover
+              no-data-text="Nenhum documento encontrado"
+            >
+              <template v-slot:item="{ item }">
+                <tr @click="goToEnviarId(item)">
+                  <td>{{ item.cliente }}</td>
+                  <td>{{ item.cnpj_cpf }}</td>
+                  <td>{{ item.qtd_documentos }}</td>
+                  <td>
+                    <v-chip :color="getStatusColor(item.status)" size="small" class="text-caption" variant="tonal">
+                      {{ getStatusText(item.status) }}
+                    </v-chip>
+                  </td>
+                </tr>
+              </template>
+            </v-data-table>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
   </v-container>
 </template>
 
@@ -55,40 +54,33 @@ import API from "@/services/apiService";
 export default {
   data() {
     return {
-      loading: true,
-      selected: [],
-      documentos: [],
+      loading: true, // Controla o skeleton loader
       headers: [
-        { title: "ID", key: "id", sortable: true },
-        { title: "Conta Débito", key: "conta_debito" },
-        { title: "Conta Crédito", key: "conta_credito" },
-        { title: "Nome Conta Débito", key: "nome_da_conta_debito" },
-        { title: "Nome Conta Crédito", key: "nome_da_conta_credito" },
-        { title: "Path File", key: "path_file" },
-        { title: "Complemento Histórico", key: "complemento_historico" },
-        { title: "Valor", key: "valor" },
-        { title: "Nome Documento", key: "nome_documento" },
-        { title: "Status", key: "status" },
+        { title: "Cliente", align: "start", key: "cliente", sortable: true },
+        { title: "CNPJ/CPF", align: "start", key: "cnpj_cpf", sortable: true },
+        { title: "Qtd Documentos", align: "center", key: "qtd_documentos", sortable: true },
+        { title: "Status", align: "center", key: "status", sortable: true },
       ],
+      documentos: [],
     };
   },
   methods: {
-    getStatusText(status) {
-      if (status === 1) return "Validado";
-      if (status === 2) return "Enviado";
-      return "Pendente";
-    },
-    getStatusColor(status) {
-      return status === 2 ? "green" : status === 1 ? "blue" : "orange";
-    },
-
     async fetchDocumentos() {
       try {
-        const response = await API.get("/enviar/documentos");
+        const response = await API.get("/enviar/cliente", {
+          headers: { Accept: "application/json" },
+        });
+
         if (Array.isArray(response.data)) {
-          this.documentos = response.data;
+          this.documentos = response.data.map((doc) => ({
+            id: doc.cliente_id || doc.id,
+            cliente: doc.nome,
+            cnpj_cpf: doc.cpf_cnpj,
+            qtd_documentos: doc.quantidade_documentos,
+            status: "Pendente",
+          }));
         } else {
-          console.error("Resposta não é array:", response.data);
+          console.error("Erro: resposta da API não é um array", response.data);
         }
       } catch (error) {
         console.error("Erro ao buscar documentos:", error);
@@ -96,40 +88,18 @@ export default {
         this.loading = false;
       }
     },
-
-    async enviarDocumentos() {
-      if (this.selected.length === 0) {
-        alert("Selecione pelo menos um documento.");
-        return;
-      }
-
-      try {
-        const response = await API.put(
-          `/validacao/enviar`,
-          { document_ids: this.selected },
-          { responseType: "blob" }
-        );
-
-        this.baixarArquivo(response.data, `documentos_${Date.now()}.txt`);
-
-        alert("Documentos enviados com sucesso!");
-        this.selected = [];
-        this.fetchDocumentos();
-      } catch (error) {
-        console.error("Erro ao enviar documentos:", error);
-        alert("Erro ao enviar documentos");
-      }
+    getStatusText(status) {
+      return status === "Pendente" ? "Pendente" : "Aprovado";
     },
-
-    baixarArquivo(blob, filename) {
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", filename);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+    getStatusColor(status) {
+      return status === "Pendente" ? "red" : "green";
+    },
+    goToEnviarId(item) {
+      if (item.id) {
+        this.$router.push(`/enviar/${item.id}`);
+      } else {
+        console.error("ID do cliente não encontrado:", item);
+      }
     },
   },
   mounted() {
@@ -139,9 +109,19 @@ export default {
 </script>
 
 <style scoped>
-.page-title {
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin-bottom: 20px;
+.page-header {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, var(--v-primary-lighten-5, #e3f2fd) 0%, var(--v-surface-base, #0a2559) 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.clickable-table tbody tr {
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.clickable-table tbody tr:hover {
+  background: rgba(var(--v-theme-primary), 0.04) !important;
 }
 </style>

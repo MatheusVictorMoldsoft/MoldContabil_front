@@ -1,6 +1,16 @@
 <template>
-  <v-container fluid>
-    <v-row>
+  <v-container fluid >
+    <div class="page-header px-6 py-4 rounded-lg">
+      <h1 class="text-h4 font-weight-medium">
+        Documento Detalhado
+      </h1>
+      <v-spacer></v-spacer>
+      <v-btn color="secondary" elevation="1" prepend-icon="mdi-arrow-left" @click="$router.go(-1)"
+        class="text-none px-4" rounded>
+        Voltar
+      </v-btn>
+    </div>
+    <v-row class="mt-2">
       <!-- Card Esquerdo: Visualização do PDF -->
       <v-col cols="12" md="6">
         <v-card class="pa-3">
@@ -25,56 +35,23 @@
           <!-- Dados do documento: exibindo e editando via form -->
           <v-card-text v-else-if="documento">
 
-            <!-- CAMPO: Conta Débito -->
-            <v-text-field
-              class="mt-3"
-              label="Conta Débito"
-              type="number"
-              v-model="form.conta_debito"
-            ></v-text-field>
+            <!-- CAMPO: Conta Débito + Nome da Conta Débito -->
+            <v-text-field class="mt-3" label="Conta Débito - Fornecedor" v-model="contaDebitoNome"
+              @input="atualizarContaDebito"></v-text-field>
 
-            <!-- CAMPO: Conta Crédito -->
-            <v-text-field
-              class="mt-3"
-              label="Conta Crédito"
-              v-model="form.conta_credito"
-            ></v-text-field>
-
-            <!-- CAMPO: Nome da Conta Débito -->
-            <v-text-field
-              class="mt-3"
-              label="Nome da Conta Débito"
-              v-model="form.nome_da_conta_debito"
-            ></v-text-field>
-
-            <!-- CAMPO: Nome da Conta Crédito -->
-            <v-text-field
-              class="mt-3"
-              label="Nome da Conta Crédito"
-              v-model="form.nome_da_conta_credito"
-            ></v-text-field>
+            <!-- CAMPO: Conta Crédito + Nome da Conta Crédito -->
+            <v-text-field class="mt-3" label="Conta Crédito - Banco" v-model="contaCreditoNome"
+              @input="atualizarContaCredito"></v-text-field>
 
             <!-- CAMPO: Complemento Histórico -->
-            <v-text-field
-              class="mt-3"
-              label="Complemento Histórico"
-              v-model="form.complemento_historico"
-            ></v-text-field>
+            <v-text-field class="mt-3" label="Complemento Histórico"
+              v-model="form.complemento_historico"></v-text-field>
 
             <!-- CAMPO: Valor -->
-            <v-text-field
-              class="mt-3"
-              label="Valor"
-              type="number"
-              v-model="form.valor"
-            ></v-text-field>
+            <v-text-field class="mt-3" label="Valor" type="number" v-model="form.valor"></v-text-field>
 
             <!-- CAMPO: Nome do Documento -->
-            <v-text-field
-              class="mt-3"
-              label="Nome do Documento"
-              v-model="form.nome_documento"
-            ></v-text-field>
+            <v-text-field class="mt-3" label="Nome do Documento" v-model="form.nome_documento"></v-text-field>
 
           </v-card-text>
 
@@ -127,12 +104,25 @@ export default {
         valor: null,
         nome_documento: null,
         status: null
-      }
+      },
+
+      // Campos combinados para exibição e edição
+      contaDebitoNome: "",
+      contaCreditoNome: "",
     };
   },
   computed: {
     docId() {
       return this.$route.params.docId;
+    },
+  },
+  watch: {
+    // Atualiza os campos combinados quando os dados são carregados
+    documento(newVal) {
+      if (newVal) {
+        this.contaDebitoNome = `${newVal.conta_debito || ""} - ${newVal.nome_da_conta_debito || ""}`;
+        this.contaCreditoNome = `${newVal.conta_credito || ""} - ${newVal.nome_da_conta_credito || ""}`;
+      }
     },
   },
   methods: {
@@ -142,16 +132,7 @@ export default {
         this.documento = response.data;
 
         // Preenche o form com os valores vindos do backend
-        this.form.conta_debito = this.documento.conta_debito;
-        this.form.conta_credito = this.documento.conta_credito;
-        this.form.nome_da_conta_debito = this.documento.nome_da_conta_debito;
-        this.form.nome_da_conta_credito = this.documento.nome_da_conta_credito;
-        this.form.path_file = this.documento.path_file;
-        this.form.complemento_historico = this.documento.complemento_historico;
-        this.form.valor = this.documento.valor;
-        this.form.nome_documento = this.documento.nome_documento;
-        this.form.status = this.documento.status;
-
+        Object.assign(this.form, response.data);
       } catch (error) {
         console.error("Erro ao buscar detalhes do documento:", error);
       } finally {
@@ -173,59 +154,42 @@ export default {
       }
     },
 
+    atualizarContaDebito() {
+      const partes = this.contaDebitoNome.split(" - ");
+      this.form.conta_debito = partes[0] || null;
+      this.form.nome_da_conta_debito = partes[1] || null;
+    },
+
+    atualizarContaCredito() {
+      const partes = this.contaCreditoNome.split(" - ");
+      this.form.conta_credito = partes[0] || null;
+      this.form.nome_da_conta_credito = partes[1] || null;
+    },
+
     async atualizarDocumento() {
       try {
-        // Monta o payload apenas com os campos que não sejam null
-        // Assim garantimos que atualizamos somente o que o usuário editou/preencheu
         const payload = {};
 
-        if (this.form.conta_debito !== null) {
-          payload.conta_debito = this.form.conta_debito;
-        }
-        if (this.form.conta_credito !== null) {
-          payload.conta_credito = this.form.conta_credito;
-        }
-        if (this.form.nome_da_conta_debito !== null) {
-          payload.nome_da_conta_debito = this.form.nome_da_conta_debito;
-        }
-        if (this.form.nome_da_conta_credito !== null) {
-          payload.nome_da_conta_credito = this.form.nome_da_conta_credito;
-        }
-        if (this.form.path_file !== null) {
-          payload.path_file = this.form.path_file;
-        }
-        if (this.form.complemento_historico !== null) {
-          payload.complemento_historico = this.form.complemento_historico;
-        }
-        if (this.form.valor !== null) {
-          payload.valor = parseFloat(this.form.valor);
-        }
-        if (this.form.nome_documento !== null) {
-          payload.nome_documento = this.form.nome_documento;
-        }
-        if (this.form.status !== null) {
-          payload.status = 1;
-        }
+        if (this.form.conta_debito !== null) payload.conta_debito = this.form.conta_debito;
+        if (this.form.conta_credito !== null) payload.conta_credito = this.form.conta_credito;
+        if (this.form.nome_da_conta_debito !== null) payload.nome_da_conta_debito = this.form.nome_da_conta_debito;
+        if (this.form.nome_da_conta_credito !== null) payload.nome_da_conta_credito = this.form.nome_da_conta_credito;
+        if (this.form.path_file !== null) payload.path_file = this.form.path_file;
+        if (this.form.complemento_historico !== null) payload.complemento_historico = this.form.complemento_historico;
+        if (this.form.valor !== null) payload.valor = parseFloat(this.form.valor);
+        if (this.form.nome_documento !== null) payload.nome_documento = this.form.nome_documento;
+        if (this.form.status !== null) payload.status = 1;
 
-        // Chama a rota PUT com docId
         const response = await API.put(`/validar/validado/${this.docId}`, payload);
 
-        // Resposta da API
         console.log("Resposta atualização:", response.data);
         this.successMessage = "Documento atualizado com sucesso!";
         this.successModalVisible = true;
 
-        // Se a API retornar o documento atualizado, reflete localmente
-        if (response.data.documento) {
-          this.documento = response.data.documento;
-        }
-
-        // Fecha modal depois de 2s (opcional)
         setTimeout(() => {
           this.successModalVisible = false;
-          this.$router.go(-1); // Volta pra página anterior
+          this.$router.go(-1);
         }, 2000);
-
       } catch (error) {
         console.error("Erro ao atualizar documento:", error);
         alert("Erro ao atualizar documento");
@@ -238,3 +202,12 @@ export default {
   },
 };
 </script>
+<style scoped>
+.page-header {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, var(--v-primary-lighten-5, #e3f2fd) 0%, var(--v-surface-base, #0a2559) 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  margin-bottom: 8px;
+}
+</style>
